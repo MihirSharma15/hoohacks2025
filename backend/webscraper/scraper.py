@@ -51,9 +51,32 @@ def get_stock_stats(stocks: list[str]) -> list[dict]:
 
     return stats
 
+def get_stock_metrics(ticker: str) -> dict[list]:
+    """
+    Return all metrics of a ticker symbol.
+
+    Returns:
+        Dict that includes list of all:
+            - general info
+            - quarterly income statement
+            - quarterly balance sheet
+            - quaterly cashflow
+    """
+    stock = yf.Ticker(ticker)
+    stock_data = {
+    "info_keys": list(stock.info.keys()),
+    "quarterly_financials": list(stock.quarterly_financials.index),
+    "quarterly_balance_sheet": list(stock.quarterly_balance_sheet.index),
+    "quarterly_cashflow": list(stock.quarterly_cashflow.index)
+    }
+    return stock_data
 
 
 if __name__ == "__main__":
     data = get_stock_stats(["AAPL"])
     for d in data:
         print(d)
+
+
+
+
