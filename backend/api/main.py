@@ -128,9 +128,9 @@ async def websocket_audio(websocket: WebSocket):
                 # Process the audio file using your existing function
                 transcription = speech_to_text(temp_file_path, client)
                 
-                command = parse_command(transcribed_text=transcription, client=client)
+                command = parse_command(transcribed_text=transcription.transcript, client=client)
                 
-                news_collections = generate_content(decision=command, query=transcription)
+                news_collections = generate_content(decision=command, query=transcription.transcript, client=client)
                 
                 print(news_collections)
                 # Send the transcription back to the client
