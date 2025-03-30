@@ -9,6 +9,7 @@ from api.data_process import get_stock_data, process_audio
 from schemas.api_schemas import APIStock, BatchAPIStock, BatchTickers
 from fastapi import status
 from gpt.agent_tools import speech_to_text
+from openai import OpenAI
 import tempfile
 import os
 
@@ -117,6 +118,7 @@ async def websocket_audio(websocket: WebSocket):
                 temp_file.write(audio_data)
             
             try:
+                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                 # Process the audio file using your existing function
                 transcription = speech_to_text(temp_file_path, client)
                 

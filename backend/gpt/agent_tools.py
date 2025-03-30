@@ -6,7 +6,7 @@ from openai import OpenAI
 import os
 import json
 import yfinance as yf
-from backend.schemas.agent_schemas import (
+from schemas.agent_schemas import (
     CommandParserDecisionTree,
     Transcription,
     NewsCollections,
