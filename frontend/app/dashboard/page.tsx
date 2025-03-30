@@ -1,7 +1,119 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { auth } from "../../firebase";
+import React, { useState } from "react";
+import { useEffect } from "react";
+
+// Account Settings Modal Component
+export function AccountSettingsModal({ isOpen, onClose }) {
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert("This is a static page. No actual update will occur.");
+  };
+
+  // Handle clicking outside the modal to close it
+  const handleOutsideClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center z-50 bg-[rgba(75,85,99,0.75)]"
+      onClick={handleOutsideClick}
+      style={{ backdropFilter: "blur(2px)" }}
+    >
+      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden relative">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-white hover:text-gray-200 z-10"
+          aria-label="Close"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <div className="px-6 py-4 bg-black">
+          <h1 className="text-xl font-bold text-white">Account Settings</h1>
+        </div>
+
+        <div className="p-6">
+          <div className="mb-6">
+            <h2 className="text-lg font-medium text-black mb-4">
+              Update Email
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="password"
+                placeholder="Current Password"
+                className="w-full p-2 border rounded text-black"
+                required
+              />
+              <input
+                type="email"
+                placeholder="New Email"
+                className="w-full p-2 border rounded text-black"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-black text-white py-2 px-4 rounded-full"
+              >
+                Update Email
+              </button>
+            </form>
+          </div>
+
+          <div className="mb-6">
+            <h2 className="text-lg font-medium text-black mb-4">
+              Update Password
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <input
+                type="password"
+                placeholder="Current Password"
+                className="w-full p-2 border rounded text-black"
+                required
+              />
+              <input
+                type="password"
+                placeholder="New Password"
+                className="w-full p-2 border rounded text-black"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Confirm New Password"
+                className="w-full p-2 border rounded text-black"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full bg-black text-white py-2 px-4 rounded-full"
+              >
+                Update Password
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
@@ -10,14 +122,7 @@ export default function Dashboard() {
   const [input, setInput] = useState("");
   const [sliderVisible, setSliderVisible] = useState(false);
   const [expandedStocks, setExpandedStocks] = useState<string[]>([]);
-  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
-
-  useEffect(() => {
-    const user = auth.currentUser;
-    if (user) {
-      setProfilePhoto(user.photoURL);
-    }
-  }, []);
+  const [showAccountModal, setShowAccountModal] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,7 +155,57 @@ export default function Dashboard() {
     }
   };
 
+  const [stockTickers, setStockTickers] = useState([]);
+  const [selectedFile, setSelectedFile] = useState(null);
+
+  const handleFileChange = (e) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
+    }
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const csv = event.target.result;
+        const lines = csv.split("\n");
+        const headers = lines[0].split(",");
+        const symbolIndex = headers.indexOf("symbol");
+
+        if (symbolIndex !== -1) {
+          const tickers = new Set();
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(",");
+            if (values[symbolIndex]) {
+              tickers.add(values[symbolIndex].trim());
+            }
+          }
+          setStockTickers(Array.from(tickers));
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const generateRandomChanges = (tickers) => {
+    const changes = {};
+    tickers.forEach((ticker) => {
+      changes[ticker] = parseFloat((Math.random() * 40 - 20).toFixed(2)); // Random value between -20% and +20%
+    });
+    return changes;
+  };
+
+  // Add this to your state variables
+  const [stockChanges, setStockChanges] = useState({});
+
+  // In your useEffect or when stockTickers changes
+  useEffect(() => {
+    if (stockTickers.length > 0) {
+      setStockChanges(generateRandomChanges(stockTickers));
+    }
+  }, [stockTickers]);
+
   const getStockNews = (ticker: string) => {
+    // This would ideally come from an API
     const newsMap: Record<string, { title: string; date: string }[]> = {
       BSX: [
         {
@@ -103,37 +258,8 @@ export default function Dashboard() {
     <div className="flex h-screen bg-gray-100 relative">
       {/* Profile Button */}
       <button
-        onClick={() => (window.location.href = "/account-settings")}
-        className="fixed top-4 left-4 w-12 h-12 rounded-full flex items-center justify-center shadow-md hover:bg-gray-800 transition-colors"
-        style={{
-          backgroundImage: profilePhoto ? `url(${profilePhoto})` : "none",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundColor: profilePhoto ? "transparent" : "black",
-        }}
-      >
-        {!profilePhoto && (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        )}
-      </button>
-
-      {/* Slider Toggle Button */}
-      <button
-        onClick={toggleSlider}
-        className="fixed top-1/2 right-0 transform -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-gray-200 rounded-l-md shadow-md border border-gray-300 text-black z-10"
+        onClick={() => setShowAccountModal(true)}
+        className="fixed top-4 left-4 w-12 h-12 bg-black rounded-full flex items-center justify-center shadow-md hover:bg-gray-800 transition-colors z-10"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -141,15 +267,13 @@ export default function Dashboard() {
           height="20"
           viewBox="0 0 24 24"
           fill="none"
-          stroke="currentColor"
+          stroke="white"
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className={`transition-transform ${
-            sliderVisible ? "rotate-180" : ""
-          }`}
         >
-          <polyline points="15 18 9 12 15 6"></polyline>
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
         </svg>
       </button>
 
@@ -179,17 +303,47 @@ export default function Dashboard() {
 
         {/* Input area */}
         <div className="border-t border-gray-200 p-4 bg-white">
-          <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="flex-1 p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-3xl mx-auto flex relative"
+          >
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                className="w-full p-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  /* Add speech recognition logic here */
+                }}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black"
+                aria-label="Voice input"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+            </div>
             <button
               type="submit"
-              className="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg"
+              className="ml-2 bg-black text-white px-4 py-2 rounded-lg"
             >
               Send
             </button>
@@ -197,66 +351,174 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Slider Panel */}
-      <div
-        className={`transition-all duration-300 bg-white border-l border-gray-200 fixed top-0 right-0 h-full overflow-hidden ${
-          sliderVisible ? "w-64" : "w-0"
-        }`}
-      >
-        {sliderVisible && (
-          <div className="p-4 overflow-y-auto h-full">
-            <h3 className="text-lg font-medium mb-4 text-black">
-              Stock Watchlist
-            </h3>
+      {/* Slider Panel with Toggle Button */}
+      <div className="fixed top-0 right-0 h-full">
+        {/* Toggle Button - Always visible */}
+        <button
+          onClick={toggleSlider}
+          className="absolute top-1/2 right-0 transform -translate-y-1/2 translate-x-0 w-10 h-10 flex items-center justify-center bg-gray-200 rounded-l-md shadow-md border border-gray-300 text-black z-10"
+          style={{
+            right: sliderVisible ? "256px" : "0px",
+            transition: "right 0.3s ease",
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={`transition-transform ${
+              sliderVisible ? "rotate-180" : ""
+            }`}
+          >
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
 
-            {/* Random Stocks List */}
-            <div className="space-y-2">
-              {["BSX", "IRBT", "KRG", "FOX", "MAIN"].map((ticker, index) => (
-                <div key={index} className="border rounded-md overflow-hidden">
-                  <button
-                    onClick={() => toggleStockNews(ticker)}
-                    className="w-full p-3 bg-white flex justify-between items-center hover:bg-gray-50"
-                  >
-                    <span className="font-medium">{ticker}</span>
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className={`transition-transform ${
-                        expandedStocks.includes(ticker) ? "rotate-180" : ""
-                      }`}
-                    >
-                      <polyline points="6 9 12 15 18 9"></polyline>
-                    </svg>
-                  </button>
+        {/* Slider Panel */}
+        <div
+          className={`transition-all duration-300 bg-white border-l border-gray-200 h-full overflow-hidden ${
+            sliderVisible ? "w-64" : "w-0"
+          }`}
+        >
+          {sliderVisible && (
+            <div className="p-4 overflow-y-auto h-full">
+              <h3 className="text-lg font-medium mb-4 text-black">
+                Stock Watchlist
+              </h3>
 
-                  {expandedStocks.includes(ticker) && (
-                    <div className="p-3 bg-gray-50 border-t text-sm">
-                      {getStockNews(ticker).map((news, i) => (
-                        <div
-                          key={i}
-                          className="mb-2 pb-2 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0"
-                        >
-                          <p className="font-medium">{news.title}</p>
-                          <p className="text-gray-600 text-xs mt-1">
-                            {news.date}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+              {/* CSV Import Section */}
+              {!selectedFile && (
+                <div className="mb-6 p-4 border border-gray-200 rounded-lg">
+                  <h4 className="text-md font-medium mb-2 text-black">
+                    Import Portfolio Data
+                  </h4>
+                  <p className="text-sm text-black mb-3">
+                    Upload a CSV file with your portfolio data
+                  </p>
+                  <input
+                    type="file"
+                    title="your text"
+                    accept=".csv"
+                    onChange={handleFileChange}
+                    className="block w-full text-sm text-black
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-black file:text-white
+                        hover:file:bg-gray-700"
+                    style={{ color: "rgba(0,0,0,0)" }}
+                  />
+                  <div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{ width: "calc(100% - 110px)", marginLeft: "110px" }}
+                  ></div>
                 </div>
-              ))}
+              )}
+
+              {/* Stock List */}
+              <div className="space-y-2">
+                {stockTickers.map((ticker, index) => (
+                  <div
+                    key={index}
+                    className="border rounded-md overflow-hidden"
+                  >
+                    <button
+                      onClick={() => toggleStockNews(ticker)}
+                      className="w-full p-3 bg-white flex justify-between items-center hover:bg-gray-5 text-black"
+                    >
+                      <div className="flex items-center">
+                        <span className="font-medium text-black">{ticker}</span>
+                        {stockChanges[ticker] !== undefined && (
+                          <span
+                            className={`ml-2 text-sm ${
+                              stockChanges[ticker] >= 0
+                                ? "text-green-600"
+                                : "text-red-600"
+                            }`}
+                          >
+                            {stockChanges[ticker] >= 0 ? "+" : ""}
+                            {stockChanges[ticker]}%
+                          </span>
+                        )}
+                      </div>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className={`transition-transform ${
+                          expandedStocks.includes(ticker) ? "rotate-180" : ""
+                        }`}
+                      >
+                        <polyline points="6 9 12 15 18 9"></polyline>
+                      </svg>
+                    </button>
+
+                    {expandedStocks.includes(ticker) && (
+                      <div className="p-3 bg-gray-50 border-t text-sm">
+                        {getStockNews(ticker).map((news, i) => (
+                          <div
+                            key={i}
+                            className="mb-2 pb-2 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0"
+                          >
+                            <p className="font-medium text-black">
+                              {news.title}
+                            </p>
+                            <p className="text-black text-xs mt-1">
+                              {news.date}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Reupload Portfolio Data option - Only show if a file has been uploaded */}
+              {selectedFile && (
+                <div className="mt-8 p-4 border border-gray-200 rounded-lg">
+                  <h4 className="text-md font-medium mb-2 text-black">
+                    Reupload Portfolio Data
+                  </h4>
+                  <div className="relative">
+                    <input
+                      type="file"
+                      title=" "
+                      accept=".csv"
+                      onChange={handleFileChange}
+                      className="block w-full text-sm text-black
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-black file:text-white
+                        hover:file:bg-gray-700"
+                      style={{ color: "rgba(0,0,0,0)" }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
+
+      {/* Account Settings Modal */}
+      <AccountSettingsModal
+        isOpen={showAccountModal}
+        onClose={() => setShowAccountModal(false)}
+      />
     </div>
   );
 }
