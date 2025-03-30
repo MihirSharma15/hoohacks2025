@@ -1,13 +1,20 @@
-import { RetroGrid } from "@/components/magicui/retro-grid";
-import Image from "next/image";
+"use client";
+
+import Header from "@/components/header";
+import Hero from "@/components/Hero";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
+  const router = useRouter();
+
   return (
-    <div className="relative flex h-[500px] w-full flex-col items-center justify-center overflow-hidden rounded-lg border bg-background">
-      <span className="pointer-events-none z-10 whitespace-pre-wrap bg-gradient-to-b from-[#ffd319] via-[#ff2975] to-[#8c1eff] bg-clip-text text-center text-7xl font-bold leading-none tracking-tighter text-transparent">
-        Retro Grid
-      </span>
-      <RetroGrid />
+    <div>
+      <Header
+        loginOnClick={() => {
+          router.push("/login");
+        }}
+      />
+      <Hero />
     </div>
   );
 }
