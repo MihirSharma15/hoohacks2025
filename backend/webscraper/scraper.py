@@ -3,7 +3,6 @@ Contains all functionality for scraping Yahoo Finance for stock action
 and market news
 """
 
-from torch import ge
 import yfinance as yf
 
 
@@ -96,9 +95,15 @@ def get_values(ticker: str, keys: list[str]) -> dict[str]:
     for key in keys:
         if key in gen_keys:
             metrics[key] = data["info"].get(key)
-        elif key in fin_keys:
-            metrics[key] = fin_keys[key]
-        else: metrics[key] = "not found"
+        elif key in data["quarterly_income"].index:
+            metrics[key] = data["quarterly_income"].loc[key].iloc[0]
+        elif key in data["quarterly_balance"].index:
+            metrics[key] = data["quarterly_balance"].loc[key].iloc[0]
+        elif key in data["quarterly_cashflow"].index:
+            metrics[key] = data["quarterly_cashflow"].loc[key].iloc[0]
+        else:
+            metrics[key] = "not found"
+    return metrics
 
     
 
@@ -106,8 +111,8 @@ def get_values(ticker: str, keys: list[str]) -> dict[str]:
 if __name__ == "__main__":
     data = get_stock_metrics("TSLA")
     general_keys, fin_keys = get_stock_keys(data)
-    print(general_keys)
-    print(get_values("APPL", ["Net PPE Purchase And Sale", "address1"]))
+    print(get_stock_metrics("AAPL"))
+    print(get_values("AAPL", ["numberOfAnalystOpinions"]))
 
 
 ### YF: assume list of keys and user query
