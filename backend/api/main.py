@@ -153,6 +153,7 @@ async def websocket_audio(websocket: WebSocket):
 
                     # TTS and playback
                     text_to_speech(news_collections.summary, client)
+                    await websocket.send_text(news_collections.model_dump_json())
                     play_audio("gpt/speech.mp3")
 
                     # Optionally, send text back
