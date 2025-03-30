@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { getBatchStockData } from '../api/stock';
 
 // Account Settings Modal Component
@@ -121,9 +120,47 @@ export default function Dashboard() {
     [{ role: "assistant", content: "Hello! How can I help you today?" }]
   );
   const [input, setInput] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
   const [sliderVisible, setSliderVisible] = useState(false);
   const [expandedStocks, setExpandedStocks] = useState<string[]>([]);
   const [showAccountModal, setShowAccountModal] = useState(false);
+
+  const wsRef = useRef(null);
+
+  // Initialize WebSocket connection
+  useEffect(() => {
+    // Create WebSocket connection
+    wsRef.current = new WebSocket("ws://localhost:8000/ws");
+    
+    // Connection opened
+    wsRef.current.onopen = () => {
+      console.log("WebSocket connection established");
+    };
+    
+    // Listen for messages
+    wsRef.current.onmessage = (event) => {
+      if (typeof event.data === 'string') {
+        // Handle text messages
+        setMessages(prev => [...prev, { role: "assistant", content: event.data }]);
+      } else {
+        // Handle binary data (audio)
+        // You would process the audio response here
+        console.log("Received binary data");
+      }
+    };
+    
+    // Connection closed
+    wsRef.current.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
+    
+    // Clean up on unmount
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -141,7 +178,49 @@ export default function Dashboard() {
       ]);
     }, 1000);
 
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      wsRef.current.send(input);
+    }
+
     setInput("");
+  };
+
+  // Handle audio recording
+  const toggleRecording = async () => {
+    if (isRecording) {
+      setIsRecording(false);
+      // Stop recording logic here
+    } else {
+      setIsRecording(true);
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        const audioChunks = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+          audioChunks.push(event.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+          const audioBlob = new Blob(audioChunks);
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            wsRef.current.send(audioBlob);
+          }
+        };
+        
+        mediaRecorder.start();
+        
+        // Stop recording after 5 seconds for testing
+        setTimeout(() => {
+          mediaRecorder.stop();
+          setIsRecording(false);
+        }, 5000);
+        
+      } catch (err) {
+        console.error("Error accessing microphone:", err);
+        setIsRecording(false);
+      }
+    }
   };
 
   const toggleSlider = () => {
@@ -301,52 +380,47 @@ export default function Dashboard() {
 
         {/* Input area */}
         <div className="border-t border-gray-200 p-4 bg-white">
-          <form
-            onSubmit={handleSubmit}
-            className="max-w-3xl mx-auto flex relative"
-          >
-            <div className="relative flex-1">
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Type your message..."
-                className="w-full p-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  /* Add speech recognition logic here */
-                }}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 w-8 h-8 flex items-center justify-center text-gray-500 hover:text-black"
-                aria-label="Voice input"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="20"
-                  height="20"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </svg>
-              </button>
-            </div>
+        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex relative">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Type your message..."
+              className="w-full p-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+            />
             <button
-              type="submit"
-              className="ml-2 bg-black text-white px-4 py-2 rounded-lg"
+              type="button"
+              onClick={toggleRecording}
+              className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black ${isRecording ? 'text-red-500' : ''}`}
+              aria-label="Voice input"
             >
-              Send
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="20" 
+                height="20" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
             </button>
-          </form>
-        </div>
+          </div>
+          <button
+            type="submit"
+            className="ml-2 bg-black text-white px-4 py-2 rounded-lg"
+          >
+            Send
+          </button>
+        </form>
+      </div>
       </div>
 
       {/* Slider Panel with Toggle Button */}
