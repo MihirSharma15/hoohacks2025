@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useEffect } from "react";
+import { getBatchStockData } from '../api/stock';
 
 // Account Settings Modal Component
 export function AccountSettingsModal({ isOpen, onClose }) {
@@ -189,22 +190,16 @@ export default function Dashboard() {
     }
   };
 
-  const generateRandomChanges = (tickers) => {
-    const changes = {};
-    tickers.forEach((ticker) => {
-      changes[ticker] = parseFloat((Math.random() * 40 - 20).toFixed(2)); // Random value between -20% and +20%
-    });
-    return changes;
-  };
+  const [stockData, setStockData] = useState([]);
 
-  // Add this to your state variables
-  const [stockChanges, setStockChanges] = useState({});
-
-  // In your useEffect or when stockTickers changes
   useEffect(() => {
-    if (stockTickers.length > 0) {
-      setStockChanges(generateRandomChanges(stockTickers));
+    async function fetchStockData() {
+      if (stockTickers.length > 0) {
+        const data = await getBatchStockData(stockTickers);
+        setStockData(data);
+      }
     }
+    fetchStockData();
   }, [stockTickers]);
 
   const getStockNews = (ticker: string) => {
@@ -426,46 +421,16 @@ export default function Dashboard() {
 
               {/* Stock List */}
               <div className="space-y-2">
-                {stockTickers.map((ticker, index) => (
-                  <div
-                    key={index}
-                    className="border rounded-md overflow-hidden"
-                  >
-                    <button
-                      onClick={() => toggleStockNews(ticker)}
-                      className="w-full p-3 bg-white flex justify-between items-center hover:bg-gray-5 text-black"
+                {stockData.map((stock, index) => (
+                  <div key={index} className="border rounded-md overflow-hidden">
+                    <button 
+                      onClick={() => toggleStockNews(stock.ticker)}
+                      className="w-full p-3 bg-white flex justify-between items-center hover:bg-gray-50"
                     >
-                      <div className="flex items-center">
-                        <span className="font-medium text-black">{ticker}</span>
-                        {stockChanges[ticker] !== undefined && (
-                          <span
-                            className={`ml-2 text-sm ${
-                              stockChanges[ticker] >= 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {stockChanges[ticker] >= 0 ? "+" : ""}
-                            {stockChanges[ticker]}%
-                          </span>
-                        )}
-                      </div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className={`transition-transform ${
-                          expandedStocks.includes(ticker) ? "rotate-180" : ""
-                        }`}
-                      >
-                        <polyline points="6 9 12 15 18 9"></polyline>
-                      </svg>
+                      <span className="font-medium text-black">{stock.ticker}</span>
+                      <span className={`text-sm ${stock.daily_percent_change >= 0 ? 'text-green-600' : 'text-red-600'} mr-2`}>
+                        {stock.daily_percent_change >= 0 ? '+' : ''}{stock.daily_percent_change.toFixed(2)}%
+                      </span>
                     </button>
 
                     {expandedStocks.includes(ticker) && (
