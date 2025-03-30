@@ -109,7 +109,7 @@ class StockData(BaseModel):
     enterpriseToRevenue: Optional[str] = Field(None, description="This describes the stock's enterpriseToRevenue")
     enterpriseToEbitda: Optional[str] = Field(None, description="This describes the stock's enterpriseToEbitda")
     # The key "52WeekChange" is not a valid identifier so we rename it here (e.g. prefix with an underscore)
-    _52WeekChange: Optional[str] = Field(None, description="This describes the stock's 52WeekChange")
+    fiftyTwoWeekChange: Optional[str] = Field(None, description="This describes the stock's 52WeekChange")
     SandP52WeekChange: Optional[str] = Field(None, description="This describes the stock's SandP52WeekChange")
     quoteType: Optional[str] = Field(None, description="This describes the stock's quoteType")
     currentPrice: Optional[str] = Field(None, description="This describes the stock's currentPrice")

@@ -5,6 +5,7 @@ import openai
 from openai import OpenAI
 from schemas.agent_schemas import CommandParserDecisionTree, Transcription
 import whisper 
+
 @lru_cache
 def get_openai_client():
     """
