@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { auth } from "../../firebase";
 
 export default function Dashboard() {
   const [messages, setMessages] = useState<{ role: string; content: string }[]>(
@@ -8,8 +9,15 @@ export default function Dashboard() {
   );
   const [input, setInput] = useState("");
   const [sliderVisible, setSliderVisible] = useState(false);
-  // const [sliderValue, setSliderValue] = useState(50);
   const [expandedStocks, setExpandedStocks] = useState<string[]>([]);
+  const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
+
+  useEffect(() => {
+    const user = auth.currentUser;
+    if (user) {
+      setProfilePhoto(user.photoURL);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +51,6 @@ export default function Dashboard() {
   };
 
   const getStockNews = (ticker: string) => {
-    // This would ideally come from an API
     const newsMap: Record<string, { title: string; date: string }[]> = {
       BSX: [
         {
@@ -97,22 +104,30 @@ export default function Dashboard() {
       {/* Profile Button */}
       <button
         onClick={() => (window.location.href = "/account-settings")}
-        className="fixed top-4 left-4 w-12 h-12 bg-black rounded-full flex items-center justify-center shadow-md hover:bg-gray-800 transition-colors"
+        className="fixed top-4 left-4 w-12 h-12 rounded-full flex items-center justify-center shadow-md hover:bg-gray-800 transition-colors"
+        style={{
+          backgroundImage: profilePhoto ? `url(${profilePhoto})` : "none",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundColor: profilePhoto ? "transparent" : "black",
+        }}
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
+        {!profilePhoto && (
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="white"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        )}
       </button>
 
       {/* Slider Toggle Button */}

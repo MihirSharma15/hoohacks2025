@@ -62,7 +62,7 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
   		animation: {
-  			grid: 'grid 15s linear infinite',
+  			grid: 'grid 40s linear infinite',
   			rainbow: 'rainbow var(--speed, 2s) infinite linear'
   		},
   		keyframes: {
