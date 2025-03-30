@@ -3,116 +3,64 @@
 import React, { useState, useEffect, useRef } from "react";
 import { getBatchStockData } from "../api/stock";
 import { Card, CardDescription, CardHeader } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 // Account Settings Modal Component
 export function AccountSettingsModal({ isOpen, onClose }) {
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     alert("This is a static page. No actual update will occur.");
   };
 
-  // Handle clicking outside the modal to close it
-  const handleOutsideClick = (e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  if (!isOpen) return null;
-
   return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 bg-[rgba(75,85,99,0.75)]"
-      onClick={handleOutsideClick}
-      style={{ backdropFilter: "blur(2px)" }}
-    >
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md overflow-hidden relative">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-white hover:text-gray-200 z-10"
-          aria-label="Close"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Account Settings</DialogTitle>
+        </DialogHeader>
 
-        <div className="px-6 py-4 bg-black">
-          <h1 className="text-xl font-bold text-white">Account Settings</h1>
-        </div>
-
-        <div className="p-6">
-          <div className="mb-6">
-            <h2 className="text-lg font-medium text-black mb-4">
-              Update Email
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="password"
-                placeholder="Current Password"
-                className="w-full p-2 border rounded text-black"
-                required
-              />
-              <input
-                type="email"
-                placeholder="New Email"
-                className="w-full p-2 border rounded text-black"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-black text-white py-2 px-4 rounded-full"
-              >
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-lg font-medium">Update Email</h2>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <Input type="password" placeholder="Current Password" required />
+              <Input type="email" placeholder="New Email" required />
+              <Button type="submit" className="w-full">
                 Update Email
-              </button>
+              </Button>
             </form>
           </div>
 
-          <div className="mb-6">
-            <h2 className="text-lg font-medium text-black mb-4">
-              Update Password
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <input
-                type="password"
-                placeholder="Current Password"
-                className="w-full p-2 border rounded text-black"
-                required
-              />
-              <input
-                type="password"
-                placeholder="New Password"
-                className="w-full p-2 border rounded text-black"
-                required
-              />
-              <input
+          <div>
+            <h2 className="text-lg font-medium">Update Password</h2>
+            <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+              <Input type="password" placeholder="Current Password" required />
+              <Input type="password" placeholder="New Password" required />
+              <Input
                 type="password"
                 placeholder="Confirm New Password"
-                className="w-full p-2 border rounded text-black"
                 required
               />
-              <button
-                type="submit"
-                className="w-full bg-black text-white py-2 px-4 rounded-full"
-              >
+              <Button type="submit" className="w-full">
                 Update Password
-              </button>
+              </Button>
             </form>
           </div>
         </div>
-      </div>
-    </div>
+
+        <DialogClose asChild>
+          <Button variant="ghost" className="absolute top-4 right-4"></Button>
+        </DialogClose>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -399,7 +347,8 @@ export default function Dashboard() {
                 <div className="grid grid-cols-2 gap-4">
                   {/* Begin source cards */}
                   {message.role === "assistant" &&
-                    data.map((title, index) => (
+                    articles &&
+                    articles.map((title, index) => (
                       <Card
                         className="w-[350px] cursor-pointer"
                         key={index}
