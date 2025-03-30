@@ -8,10 +8,12 @@ from fastapi.responses import HTMLResponse
 from api.data_process import get_stock_data, process_audio
 from schemas.api_schemas import APIStock, BatchAPIStock, BatchTickers
 from fastapi import status
-from gpt.agent_tools import speech_to_text
+from gpt.agent_tools import speech_to_text, parse_command, generate_content
 from openai import OpenAI
 import tempfile
 import os
+from dotenv import load_dotenv
+import openai 
 
 app = FastAPI(
     title="Aura API",
@@ -117,12 +119,20 @@ async def websocket_audio(websocket: WebSocket):
                 temp_file_path = temp_file.name
                 temp_file.write(audio_data)
             
-            try:
+            try: 
+                load_dotenv()
+
+                openai.api_key = os.getenv("OPENAI_API_KEY")
+
                 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
                 # Process the audio file using your existing function
                 transcription = speech_to_text(temp_file_path, client)
                 
-                print(transcription)
+                command = parse_command(transcribed_text=transcription, client=client)
+                
+                news_collections = generate_content(decision=command, query=transcription)
+                
+                print(news_collections)
                 # Send the transcription back to the client
                 # await websocket.send_text(transcription.transcript)
             finally:
