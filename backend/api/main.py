@@ -3,7 +3,9 @@
 from typing import List
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 import asyncio
-from api.data_process import get_stock_data
+
+from fastapi.responses import HTMLResponse
+from api.data_process import get_stock_data, process_audio
 from schemas.api_schemas import APIStock, BatchAPIStock, BatchTickers
 from fastapi import status
 
@@ -15,7 +17,7 @@ app = FastAPI(
 
 @app.get("/")
 async def root():
-    return {"message": "Hello World"}
+    return HTMLResponse(html)
 
 @app.get("/get-price", response_model=APIStock, status_code=status.HTTP_200_OK)
 async def get_price_route(ticker: str):
@@ -63,3 +65,57 @@ async def get_price_route(tickers: List[str] = Query(..., description="List of t
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error fetching data for tickers: {str(e)}"
         )
+
+html = """
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Aura Chat</title>
+    </head>
+    <body>
+        <h1>WebSocket Chat</h1>
+        <form action="" onsubmit="sendMessage(event)">
+            <input type="text" id="messageText" autocomplete="off"/>
+            <button>Send</button>
+        </form>
+        <ul id='messages'>
+        </ul>
+        <script>
+            var ws = new WebSocket("ws://localhost:8000/ws/");
+            ws.onmessage = function(event) {
+                var messages = document.getElementById('messages')
+                var message = document.createElement('li')
+                var content = document.createTextNode(event.data)
+                message.appendChild(content)
+                messages.appendChild(message)
+            };
+            function sendMessage(event) {
+                var input = document.getElementById("messageText")
+                ws.send(input.value)
+                input.value = ''
+                event.preventDefault()
+            }
+        </script>
+    </body>
+</html>
+"""
+
+@app.websocket("/ws")
+async def websocket_audio(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            # Receive audio data as binary bytes
+            audio_data = await websocket.receive_bytes()
+            # text = await websocket.receive_text()
+            
+            processed_audio = await process_audio(audio_data)
+            
+            # Send the processed audio back to the client
+            await websocket.send_bytes(processed_audio)
+            # await websocket.send_text(f"Received: {text}")
+    except WebSocketDisconnect:
+        print("Client disconnected")
+    except Exception as e:
+        print(f"Error: {e}")
+        await websocket.close()
