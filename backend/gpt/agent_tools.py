@@ -6,6 +6,8 @@ from openai import OpenAI
 import os
 import json
 import yfinance as yf
+import platform
+import subprocess
 from pathlib import Path
 from schemas.agent_schemas import (
     CommandParserDecisionTree,
@@ -121,6 +123,7 @@ def parse_command(transcribed_text: str, client: OpenAI) -> CommandParserDecisio
             ],
         )
         raw = response.choices[0].message.content.strip()
+        print("1,", raw)
         parsed = json.loads(raw)
         print(parsed)
         return CommandParserDecisionTree(**parsed)
@@ -200,14 +203,60 @@ def generate_content(decision: CommandParserDecisionTree, query: str, client: Op
             ],
         )
         raw = response.choices[0].message.content.strip()
-        # print(raw)
+        print(raw)
         parsed = json.loads(raw)
         return NewsCollections(**parsed)
         # return raw
     except Exception as e:
         print(f"Error parsing command: {e}")
 
-def text_to_speech(text: str):
+def text_to_speech(text: str, client: OpenAI):
     """
-    Summarize text and 
+    Summarize text and speak it aloud using OpenAI's TTS.
     """
+    prompt = """You are an expert investing assistant. Your only job is to summarize financial or investment-related content. 
+                You should condense the information down to one sentence. The audio recording should be less than 10 seconds.
+                Always start off with 'Here's what I found: ', 'Turns out, ...' and phrases similar to that"""
+
+    try:
+        # Summarize
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": text},
+            ],
+        )
+        condensed = response.choices[0].message.content.strip()
+        print("Summary:", condensed)
+
+        # Generate speech
+        speech_file_path = Path(__file__).parent / "speech.mp3"
+        with client.audio.speech.with_streaming_response.create(
+            model="gpt-4o-mini-tts",
+            voice="onyx",
+            input=condensed,
+            instructions="Speak in a supportive tone.",
+        ) as audio_response:
+            audio_response.stream_to_file(speech_file_path)
+
+    except Exception as e:
+        print(f"Error during TTS: {e}")
+
+def play_audio(audio_path: Path):
+    """
+    Cross-platform way to play an audio file.
+    """
+    system = platform.system()
+
+    try:
+        if system == "Darwin":  # macOS
+            subprocess.run(["afplay", str(audio_path)])
+        elif system == "Windows":
+            os.startfile(audio_path)
+        elif system == "Linux":
+            subprocess.run(["mpg123", str(audio_path)])
+        else:
+            print("Unsupported platform for audio playback.")
+    except Exception as e:
+        print(f"Audio playback error: {e}")
