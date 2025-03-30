@@ -127,61 +127,60 @@ export default function Dashboard() {
 
   const wsRef = useRef(null);
 
-  // Initialize WebSocket connection
+  const [articles, setArticles] = useState([]);
+
   useEffect(() => {
-    // Create WebSocket connection
     wsRef.current = new WebSocket("ws://localhost:8000/ws");
     
-    // Connection opened
     wsRef.current.onopen = () => {
       console.log("WebSocket connection established");
     };
     
-    // Listen for messages
     wsRef.current.onmessage = (event) => {
-      if (typeof event.data === 'string') {
-        // Handle text messages
+      try {
+        const data = JSON.parse(event.data);
+        
+        // If the data contains a summary and articles
+        if (data.summary && data.articles) {
+          // Add the summary as an assistant message
+          setMessages(prev => [...prev, { role: "assistant", content: data.summary }]);
+          
+          // Store the articles for later use
+          setArticles(data.articles);
+        } else {
+          // Handle regular text messages
+          setMessages(prev => [...prev, { role: "assistant", content: event.data }]);
+        }
+      } catch (error) {
+        // If parsing fails, treat it as a plain text message
+        console.error("Error parsing JSON:", error);
         setMessages(prev => [...prev, { role: "assistant", content: event.data }]);
-      } else {
-        // Handle binary data (audio)
-        // You would process the audio response here
-        console.log("Received binary data");
       }
     };
     
-    // Connection closed
     wsRef.current.onclose = () => {
       console.log("WebSocket connection closed");
     };
     
-    // Clean up on unmount
     return () => {
       if (wsRef.current) {
         wsRef.current.close();
       }
     };
   }, []);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!input.trim()) return;
-
-    setMessages([...messages, { role: "user", content: input }]);
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: `This is a simulated response to: "${input}"`,
-        },
-      ]);
-    }, 1000);
-
+  
+    // Add user message to chat
+    setMessages(prev => [...prev, { role: "user", content: input }]);
+    
+    // Send message via WebSocket
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(input);
     }
-
+    
     setInput("");
   };
 

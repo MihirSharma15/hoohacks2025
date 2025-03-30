@@ -14,6 +14,7 @@ import tempfile
 import os
 from dotenv import load_dotenv
 import openai 
+import json
 
 app = FastAPI(
     title="Aura API",
@@ -110,37 +111,59 @@ html = """
 async def websocket_audio(websocket: WebSocket):
     await websocket.accept()
     try:
+        load_dotenv()
+        openai.api_key = os.getenv("OPENAI_API_KEY")
+        client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
         while True:
-            # Receive audio data as binary bytes
-            audio_data = await websocket.receive_bytes()
+            # Check the type of incoming data
+            data = await websocket.receive()
             
-             # Save the bytes to a temporary MP3 file
-            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-                temp_file_path = temp_file.name
-                temp_file.write(audio_data)
-            
-            try: 
-                load_dotenv()
-
-                openai.api_key = os.getenv("OPENAI_API_KEY")
-
-                client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-                # Process the audio file using your existing function
-                transcription = speech_to_text(temp_file_path, client)
+            if "text" in data:
+                try:
+                    # Handle text message
+                    text_message = data["text"]
+                    
+                    # Process the text message
+                    command = parse_command(transcribed_text=text_message, client=client)
+                    news_collections = generate_content(decision=command, query=text_message, client=client)
+                    
+                    # Send response back to client
+                    await websocket.send_text(news_collections.model_dump_json())
+                except Exception as e:
+                    print(f"Error processing text: {e}")
+                    await websocket.send_text(f"Error processing your message: {str(e)}")
+                    
+            elif "bytes" in data:
+                # Handle audio data
+                audio_data = data["bytes"]
+                temp_file_path = None
                 
-                command = parse_command(transcribed_text=transcription.transcript, client=client)
-                
-                news_collections = generate_content(decision=command, query=transcription.transcript, client=client)
-                
-                print(news_collections)
-                # Send the transcription back to the client
-                # await websocket.send_text(transcription.transcript)
-            finally:
-                # Clean up the temporary file
-                if os.path.exists(temp_file_path):
-                    os.remove(temp_file_path)
+                try:
+                    # Save the bytes to a temporary MP3 file
+                    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+                        temp_file_path = temp_file.name
+                        temp_file.write(audio_data)
+                    
+                    # Process the audio file
+                    transcription = speech_to_text(temp_file_path, client)
+                    command = parse_command(transcribed_text=transcription.transcript, client=client)
+                    news_collections = generate_content(decision=command, query=transcription.transcript, client=client)
+                    
+                    # Send the response back to the client
+                    await websocket.send(news_collections.model_dump_json())
+                    
+                except Exception as e:
+                    print(f"Error processing audio: {e}")
+                    await websocket.send_text(f"Error processing your audio: {str(e)}")
+                finally:
+                    # Clean up the temporary file
+                    if temp_file_path and os.path.exists(temp_file_path):
+                        os.remove(temp_file_path)
+                        
     except WebSocketDisconnect:
         print("Client disconnected")
     except Exception as e:
         print(f"Error: {e}")
         await websocket.close()
+

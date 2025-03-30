@@ -122,6 +122,7 @@ def parse_command(transcribed_text: str, client: OpenAI) -> CommandParserDecisio
         )
         raw = response.choices[0].message.content.strip()
         parsed = json.loads(raw)
+        print(parsed)
         return CommandParserDecisionTree(**parsed)
     except Exception as e:
         print(f"Error parsing command: {e}")
