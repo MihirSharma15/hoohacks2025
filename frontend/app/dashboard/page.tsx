@@ -89,7 +89,7 @@ export default function Dashboard() {
 
     wsRef.current.onmessage = (event) => {
       try {
-        console.log(event.data)
+        console.log(event.data);
         const data = JSON.parse(event.data);
 
         // If the data contains a summary and articles
@@ -332,13 +332,11 @@ export default function Dashboard() {
                   {/* Begin source cards */}
                   {message.role === "assistant" &&
                     articles &&
-                    articles.map((title, index) => (
+                    articles.map((article, index) => (
                       <Card
                         className="w-[350px] cursor-pointer"
                         key={index}
-                        onClick={() =>
-                          window.open(article.url, "_blank")
-                        }
+                        onClick={() => window.open(article.url, "_blank")}
                       >
                         <div className="p-4">
                           <CardHeader className="font-bold">
