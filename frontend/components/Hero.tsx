@@ -19,7 +19,7 @@ const Hero = () => {
           accessible through conversation.
         </p>
       </div>
-      <RetroGrid />
+      <RetroGrid lightLineColor="blue" />
     </div>
   );
 };

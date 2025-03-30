@@ -163,6 +163,9 @@ export default function Dashboard() {
       setSelectedFile(e.target.files[0]);
     }
     const file = e.target.files[0];
+
+    //store file in Firestore here
+
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
