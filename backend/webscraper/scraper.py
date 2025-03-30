@@ -51,32 +51,64 @@ def get_stock_stats(stocks: list[str]) -> list[dict]:
 
     return stats
 
-def get_stock_metrics(ticker: str) -> dict[list]:
+def get_stock_metrics(ticker: str) -> dict[str, object]:
     """
-    Return all metrics of a ticker symbol.
+    Return all metrics of a ticker symbol
 
     Returns:
-        Dict that includes list of all:
-            - general info
-            - quarterly income statement
-            - quarterly balance sheet
-            - quaterly cashflow
+        Dict that includes:
+            - general info (dict)
+            - quarterly income statement (DataFrame)
+            - quarterly balance sheet (DataFrame)
+            - quarterly cashflow (DataFrame)
     """
     stock = yf.Ticker(ticker)
-    stock_data = {
-    "info_keys": list(stock.info.keys()),
-    "quarterly_financials": list(stock.quarterly_financials.index),
-    "quarterly_balance_sheet": list(stock.quarterly_balance_sheet.index),
-    "quarterly_cashflow": list(stock.quarterly_cashflow.index)
+    return {
+        "info": stock.info,
+        "quarterly_income": stock.quarterly_financials,
+        "quarterly_balance": stock.quarterly_balance_sheet,
+        "quarterly_cashflow": stock.quarterly_cashflow
     }
-    return stock_data
+
+def get_stock_keys(stock_data: dict[str, object]) -> list[str]:
+    """
+    Given all metrics for a specified symbol, return all unique metric keys
+    across general info, income, balance sheet, and cashflow
+    """
+    general_keys = list(stock_data["info"].keys())
+    financial_keys = list(stock_data["quarterly_income"].index)
+    financial_keys += list(stock_data["quarterly_balance"].index)
+    financial_keys += list(stock_data["quarterly_cashflow"].index)
+    
+    return general_keys, financial_keys
+
+def get_values(ticker: str, keys: list[str]) -> dict[str]:
+    """
+    Return values for all metrics with ticker and keys given
+
+    Returns:
+        A dictionary where all keys given maps to corresponding value
+    """
+    metrics = {}
+    data = get_stock_metrics(ticker)
+    gen_keys, fin_keys = get_stock_keys(data)
+    for key in keys:
+        if key in gen_keys:
+            metrics[key] = data["info"].get(key)
+        elif key in fin_keys:
+            metrics[key] = fin_keys[key]
+        else: metrics[key] = "not found"
+
+    
 
 
 if __name__ == "__main__":
-    data = get_stock_stats(["AAPL"])
-    for d in data:
-        print(d)
+    data = get_stock_metrics("AAPL")
+    general_keys, fin_keys = get_stock_keys(data)
+    print(get_values("APPL", ["Net PPE Purchase And Sale", "address1"]))
 
 
+### YF: assume list of keys and user query
 
+#### Search: pass user query
 
