@@ -67,8 +67,14 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 
 export default function Dashboard() {
   const [messages, setMessages] = useState<
-    { role: string; content: string; sources?: any }[]
-  >([{ role: "assistant", content: "Hello! How can I help you today?" }]);
+    { role: string; content: string; articles: any }[]
+  >([
+    {
+      role: "assistant",
+      content: "Hello! How can I help you today?",
+      articles: [],
+    },
+  ]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [sliderVisible, setSliderVisible] = useState(false);
@@ -97,7 +103,11 @@ export default function Dashboard() {
           // Add the summary as an assistant message
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: data.summary },
+            {
+              role: "assistant",
+              content: data.summary,
+              articles: data.articles,
+            },
           ]);
 
           // Store the articles for later use
@@ -106,7 +116,7 @@ export default function Dashboard() {
           // Handle regular text messages
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: event.data },
+            { role: "assistant", content: event.data, articles: [] },
           ]);
         }
       } catch (error) {
@@ -114,7 +124,7 @@ export default function Dashboard() {
         console.error("Error parsing JSON:", error);
         setMessages((prev) => [
           ...prev,
-          { role: "assistant", content: event.data },
+          { role: "assistant", content: event.data, articles: [] },
         ]);
       }
     };
@@ -135,7 +145,10 @@ export default function Dashboard() {
     if (!input.trim()) return;
 
     // Add user message to chat
-    setMessages((prev) => [...prev, { role: "user", content: input }]);
+    setMessages((prev) => [
+      ...prev,
+      { role: "user", content: input, articles: [] },
+    ]);
 
     // Send message via WebSocket
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -332,7 +345,7 @@ export default function Dashboard() {
                   {/* Begin source cards */}
                   {message.role === "assistant" &&
                     articles &&
-                    articles.map((article, index) => (
+                    message.articles.map((article, index) => (
                       <Card
                         className="w-[350px] cursor-pointer"
                         key={index}
