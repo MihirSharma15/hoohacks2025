@@ -3,7 +3,7 @@
 from functools import lru_cache
 import openai
 from openai import OpenAI
-from schemas.agent_schemas import Transcription
+from schemas.agent_schemas import CommandParserDecisionTree, Transcription
 import whisper 
 @lru_cache
 def get_openai_client():
@@ -26,7 +26,7 @@ def speech_to_text(audio_file_path: str, client: OpenAI) -> Transcription:
     return Transcription(transcript=transcription["text"])
 
 
-def parse_command(transcribed_text: str) -> str:
+def parse_command(transcribed_text: str, client: OpenAI) -> CommandParserDecisionTree:
     """
     Parses the transcribed text into a structured JSON command.
     The output JSON will have two keys:
@@ -38,10 +38,20 @@ def parse_command(transcribed_text: str) -> str:
     You are a stock market command parser. Given the transcribed text, determine what type of data the user is asking for.
     Output a valid JSON object with two keys: "action" and "ticker".
     - "action" can be "scrape" for numerical stock data, "news" for news articles, or "both" for both.
-    - "ticker" should be the stock ticker symbol mentioned in the text.
+    - "ticker" should be the stock ticker symbol mentioned in the text. If multiple tickers are mentioned, return multiple ones. 
     For example, if the input is "Why is TSLA down?", output:
     {{"action": "both", "ticker": "TSLA"}}
-    Transcribed text: {transcribed_text}
     """
+    
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "developer", "content": prompt},
+                {"role": "user", "content": transcribed_text}],
+                response_format="CommandParserDecisionTree")
+        return CommandParserDecisionTree(response.choices[0].message.content)
+    except Exception as e:
+        print(f"Error parsing command: {e}")
 
 client = OpenAI()
