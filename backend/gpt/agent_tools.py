@@ -6,6 +6,7 @@ from openai import OpenAI
 import os
 import json
 import yfinance as yf
+from pathlib import Path
 from schemas.agent_schemas import (
     CommandParserDecisionTree,
     Transcription,
@@ -111,7 +112,6 @@ def parse_command(transcribed_text: str, client: OpenAI) -> CommandParserDecisio
     }}
     }}
     """
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -121,14 +121,13 @@ def parse_command(transcribed_text: str, client: OpenAI) -> CommandParserDecisio
             ],
         )
         raw = response.choices[0].message.content.strip()
-
         parsed = json.loads(raw)
         return CommandParserDecisionTree(**parsed)
     except Exception as e:
         print(f"Error parsing command: {e}")
 
 
-def generate_content(decision: CommandParserDecisionTree, query: str):
+def generate_content(decision: CommandParserDecisionTree, query: str, client: OpenAI):
     """
     Based on decisions to leverage Yahoo Finance and web scrape.
     """
@@ -207,12 +206,7 @@ def generate_content(decision: CommandParserDecisionTree, query: str):
     except Exception as e:
         print(f"Error parsing command: {e}")
 
-
-load_dotenv()
-
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-query = "what are the effects of trump tariffs"
-text = parse_command(query, client)
-print(generate_content(text, query))
+def text_to_speech(text: str):
+    """
+    Summarize text and 
+    """
