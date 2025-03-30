@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { getBatchStockData } from '../api/stock';
+import { getBatchStockData } from "../api/stock";
+import { Card, CardDescription, CardHeader } from "@/components/ui/card";
 
 // Account Settings Modal Component
 export function AccountSettingsModal({ isOpen, onClose }) {
@@ -116,14 +117,15 @@ export function AccountSettingsModal({ isOpen, onClose }) {
 }
 
 export default function Dashboard() {
-  const [messages, setMessages] = useState<{ role: string; content: string }[]>(
-    [{ role: "assistant", content: "Hello! How can I help you today?" }]
-  );
+  const [messages, setMessages] = useState<
+    { role: string; content: string; sources?: any }[]
+  >([{ role: "assistant", content: "Hello! How can I help you today?" }]);
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [sliderVisible, setSliderVisible] = useState(false);
   const [expandedStocks, setExpandedStocks] = useState<string[]>([]);
   const [showAccountModal, setShowAccountModal] = useState(false);
+  const data = [""];
 
   const wsRef = useRef(null);
 
@@ -131,29 +133,32 @@ export default function Dashboard() {
   useEffect(() => {
     // Create WebSocket connection
     wsRef.current = new WebSocket("ws://localhost:8000/ws");
-    
+
     // Connection opened
     wsRef.current.onopen = () => {
       console.log("WebSocket connection established");
     };
-    
+
     // Listen for messages
     wsRef.current.onmessage = (event) => {
-      if (typeof event.data === 'string') {
+      if (typeof event.data === "string") {
         // Handle text messages
-        setMessages(prev => [...prev, { role: "assistant", content: event.data }]);
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: event.data },
+        ]);
       } else {
         // Handle binary data (audio)
         // You would process the audio response here
         console.log("Received binary data");
       }
     };
-    
+
     // Connection closed
     wsRef.current.onclose = () => {
       console.log("WebSocket connection closed");
     };
-    
+
     // Clean up on unmount
     return () => {
       if (wsRef.current) {
@@ -193,29 +198,30 @@ export default function Dashboard() {
     } else {
       setIsRecording(true);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+        });
         const mediaRecorder = new MediaRecorder(stream);
         const audioChunks = [];
-        
+
         mediaRecorder.ondataavailable = (event) => {
           audioChunks.push(event.data);
         };
-        
+
         mediaRecorder.onstop = () => {
           const audioBlob = new Blob(audioChunks);
           if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(audioBlob);
           }
         };
-        
+
         mediaRecorder.start();
-        
+
         // Stop recording after 5 seconds for testing
         setTimeout(() => {
           mediaRecorder.stop();
           setIsRecording(false);
         }, 5000);
-        
       } catch (err) {
         console.error("Error accessing microphone:", err);
         setIsRecording(false);
@@ -243,8 +249,6 @@ export default function Dashboard() {
       setSelectedFile(e.target.files[0]);
     }
     const file = e.target.files[0];
-
-    //store file in Firestore here
 
     if (file) {
       const reader = new FileReader();
@@ -364,15 +368,53 @@ export default function Dashboard() {
         <div className="flex-1 overflow-y-auto p-4">
           <div className="max-w-3xl mx-auto">
             {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`mb-4 p-4 rounded-lg ${
-                  message.role === "user"
-                    ? "bg-blue-100 ml-auto"
-                    : "bg-white mr-auto"
-                } max-w-[80%]`}
-              >
-                <p className="text-black">{message.content}</p>
+              <div key={index}>
+                {/* Message with gradient border */}
+                <div
+                  className={`mb-2 mt-2 max-w-[80%] ${
+                    message.role === "user" ? "ml-auto" : "mr-auto"
+                  }`}
+                >
+                  <div
+                    className={`${
+                      message.role === "assistant"
+                        ? "border-3 border-transparent bg-clip-padding bg-gradient-to-r from-blue-500 to-green-500 p-[2px] mb-4"
+                        : ""
+                    } rounded-md`}
+                  >
+                    <div
+                      className={`${
+                        message.role === "user" ? "bg-blue-100" : "bg-white"
+                      } p-4 rounded-md`}
+                    >
+                      <p className="text-black">{message.content}</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Begin source cards */}
+                  {message.role === "assistant" &&
+                    data.map((title, index) => (
+                      <Card
+                        className="w-[350px] cursor-pointer"
+                        key={index}
+                        onClick={() =>
+                          window.open("https://www.google.com", "_blank")
+                        }
+                      >
+                        <div className="p-4">
+                          <CardHeader className="font-bold">
+                            Trump's promised 'Liberation Day' of tariffs is
+                            coming. Here's what it could mean for you
+                          </CardHeader>
+                          <CardDescription>
+                            This is the description of the depressing economic
+                            news that was just given to you
+                          </CardDescription>
+                        </div>
+                      </Card>
+                    ))}
+                </div>
               </div>
             ))}
           </div>
@@ -380,47 +422,52 @@ export default function Dashboard() {
 
         {/* Input area */}
         <div className="border-t border-gray-200 p-4 bg-white">
-        <form onSubmit={handleSubmit} className="max-w-3xl mx-auto flex relative">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type your message..."
-              className="w-full p-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
-            />
-            <button
-              type="button"
-              onClick={toggleRecording}
-              className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black ${isRecording ? 'text-red-500' : ''}`}
-              aria-label="Voice input"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="20" 
-                height="20" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
-                strokeLinejoin="round"
-              >
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                <line x1="12" y1="19" x2="12" y2="23"></line>
-                <line x1="8" y1="23" x2="16" y2="23"></line>
-              </svg>
-            </button>
-          </div>
-          <button
-            type="submit"
-            className="ml-2 bg-black text-white px-4 py-2 rounded-lg"
+          <form
+            onSubmit={handleSubmit}
+            className="max-w-3xl mx-auto flex relative"
           >
-            Send
-          </button>
-        </form>
-      </div>
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type your message..."
+                className="w-full p-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              />
+              <button
+                type="button"
+                onClick={toggleRecording}
+                className={`absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-black ${
+                  isRecording ? "text-red-500" : ""
+                }`}
+                aria-label="Voice input"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="23"></line>
+                  <line x1="8" y1="23" x2="16" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <button
+              type="submit"
+              className="ml-2 bg-black text-white px-4 py-2 rounded-lg"
+            >
+              Send
+            </button>
+          </form>
+        </div>
       </div>
 
       {/* Slider Panel with Toggle Button */}
@@ -496,14 +543,26 @@ export default function Dashboard() {
               {/* Stock List */}
               <div className="space-y-2">
                 {stockData.map((stock, index) => (
-                  <div key={index} className="border rounded-md overflow-hidden">
-                    <button 
+                  <div
+                    key={index}
+                    className="border rounded-md overflow-hidden"
+                  >
+                    <button
                       onClick={() => toggleStockNews(stock.ticker)}
                       className="w-full p-3 bg-white flex justify-between items-center hover:bg-gray-50"
                     >
-                      <span className="font-medium text-black">{stock.ticker}</span>
-                      <span className={`text-sm ${stock.daily_percent_change >= 0 ? 'text-green-600' : 'text-red-600'} mr-2`}>
-                        {stock.daily_percent_change >= 0 ? '+' : ''}{stock.daily_percent_change.toFixed(2)}%
+                      <span className="font-medium text-black">
+                        {stock.ticker}
+                      </span>
+                      <span
+                        className={`text-sm ${
+                          stock.daily_percent_change >= 0
+                            ? "text-green-600"
+                            : "text-red-600"
+                        } mr-2`}
+                      >
+                        {stock.daily_percent_change >= 0 ? "+" : ""}
+                        {stock.daily_percent_change.toFixed(2)}%
                       </span>
                     </button>
 
