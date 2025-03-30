@@ -94,40 +94,63 @@ export default function Dashboard() {
     };
 
     wsRef.current.onmessage = (event) => {
-      try {
-        console.log(event.data);
-        const data = JSON.parse(event.data);
-
-        // If the data contains a summary and articles
-        if (data.summary && data.articles) {
-          // Add the summary as an assistant message
-          setMessages((prev) => [
-            ...prev,
-            {
-              role: "assistant",
-              content: data.summary,
-              articles: data.articles,
-            },
-          ]);
-
-          // Store the articles for later use
-          setArticles(data.articles);
+      console.log("Received data:", event.data);
+      
+      // First check if it's a string
+      if (typeof event.data === 'string') {
+        console.log(event.data)
+        // Try to determine if it looks like JSON
+        if (event.data.trim().startsWith('{')) {
+          console.log(2)
+          try {
+            console.log(3)
+            // Attempt to parse as JSON
+            const data = JSON.parse(event.data);
+            
+            // If successful, process as assistant message
+            if (data.summary && data.articles) {
+              console.log(4)
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: "assistant",
+                  content: data.summary,
+                  articles: data.articles,
+                },
+              ]);
+              setArticles(data.articles);
+            } else {
+              console.log(5)
+              // JSON without expected structure
+              setMessages((prev) => [
+                ...prev,
+                { role: "assistant", content: JSON.stringify(data), articles: [] },
+              ]);
+            }
+          } catch {
+            console.log(6)
+            // If it looks like JSON but isn't valid, treat as user message
+            setMessages((prev) => [
+              ...prev,
+              { role: "user", content: event.data, articles: [] },
+            ]);
+          }
         } else {
-          // Handle regular text messages
+          console.log(7)
+          // Definitely not JSON, treat as user message
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: event.data, articles: [] },
+            { role: "user", content: event.data, articles: [] },
           ]);
         }
-      } catch (error) {
-        // If parsing fails, treat it as a plain text message
-        console.error("Error parsing JSON:", error);
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", content: event.data, articles: [] },
-        ]);
+      } else {
+        console.log(9)
+        // Non-string data (unlikely in this case)
+        console.log("Received non-string data");
       }
     };
+    
+    
 
     wsRef.current.onclose = () => {
       console.log("WebSocket connection closed");
