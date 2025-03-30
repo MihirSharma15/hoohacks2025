@@ -51,6 +51,7 @@ def get_stock_stats(stocks: list[str]) -> list[dict]:
 
     return stats
 
+
 def get_stock_metrics(ticker: str) -> dict[str, object]:
     """
     Return all metrics of a ticker symbol
@@ -67,8 +68,9 @@ def get_stock_metrics(ticker: str) -> dict[str, object]:
         "info": stock.info,
         "quarterly_income": stock.quarterly_financials,
         "quarterly_balance": stock.quarterly_balance_sheet,
-        "quarterly_cashflow": stock.quarterly_cashflow
+        "quarterly_cashflow": stock.quarterly_cashflow,
     }
+
 
 def get_stock_keys(stock_data: dict[str, object]) -> list[str]:
     """
@@ -79,8 +81,9 @@ def get_stock_keys(stock_data: dict[str, object]) -> list[str]:
     financial_keys = list(stock_data["quarterly_income"].index)
     financial_keys += list(stock_data["quarterly_balance"].index)
     financial_keys += list(stock_data["quarterly_cashflow"].index)
-    
+
     return general_keys, financial_keys
+
 
 def get_values(ticker: str, keys: list[str]) -> dict[str]:
     """
@@ -105,8 +108,6 @@ def get_values(ticker: str, keys: list[str]) -> dict[str]:
             metrics[key] = "not found"
     return metrics
 
-    
-
 
 if __name__ == "__main__":
     data = get_stock_metrics("TSLA")
@@ -118,4 +119,3 @@ if __name__ == "__main__":
 ### YF: assume list of keys and user query
 
 #### Search: pass user query
-
