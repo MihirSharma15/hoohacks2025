@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse
 from api.data_process import get_stock_data, process_audio
 from schemas.api_schemas import APIStock, BatchAPIStock, BatchTickers
 from fastapi import status
-from gpt.agent_tools import speech_to_text, parse_command, generate_content
+from gpt.agent_tools import speech_to_text, parse_command, generate_content, text_to_speech, play_audio
 from openai import OpenAI
 import tempfile
 import os
@@ -135,32 +135,37 @@ async def websocket_audio(websocket: WebSocket):
                     await websocket.send_text(f"Error processing your message: {str(e)}")
                     
             elif "bytes" in data:
-                # Handle audio data
                 audio_data = data["bytes"]
                 temp_file_path = None
-                
+
+                # Save audio to a temp file
+                with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as temp_file:
+                    temp_file_path = temp_file.name
+                    temp_file.write(audio_data)
+
                 try:
-                    # Save the bytes to a temporary MP3 file
-                    with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
-                        temp_file_path = temp_file.name
-                        temp_file.write(audio_data)
-                    
-                    # Process the audio file
+                    # Transcribe audio
                     transcription = speech_to_text(temp_file_path, client)
+
+                    # Process transcription
                     command = parse_command(transcribed_text=transcription.transcript, client=client)
                     news_collections = generate_content(decision=command, query=transcription.transcript, client=client)
-                    
-                    # Send the response back to the client
-                    await websocket.send(news_collections.model_dump_json())
-                    
+
+                    # TTS and playback
+                    text_to_speech(news_collections.summary, client)
+                    play_audio("gpt/speech.mp3")
+
+                    # Optionally, send text back
+                    # await websocket.send_text(transcription.transcript)
+
                 except Exception as e:
                     print(f"Error processing audio: {e}")
                     await websocket.send_text(f"Error processing your audio: {str(e)}")
+
                 finally:
-                    # Clean up the temporary file
                     if temp_file_path and os.path.exists(temp_file_path):
                         os.remove(temp_file_path)
-                        
+                
     except WebSocketDisconnect:
         print("Client disconnected")
     except Exception as e:
