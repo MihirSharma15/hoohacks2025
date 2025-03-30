@@ -37,6 +37,3 @@ async def process_audio(audio_data: bytes) -> bytes:
    await asyncio.sleep(1)
 
    return audio_data
-
-
-
