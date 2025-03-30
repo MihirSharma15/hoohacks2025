@@ -14,6 +14,7 @@ import tempfile
 import os
 from dotenv import load_dotenv
 import openai 
+import time
 import json
 
 app = FastAPI(
@@ -127,7 +128,6 @@ async def websocket_audio(websocket: WebSocket):
                     # Process the text message
                     command = parse_command(transcribed_text=text_message, client=client)
                     news_collections = generate_content(decision=command, query=text_message, client=client)
-                    
                     # Send response back to client
                     await websocket.send_text(news_collections.model_dump_json())
                 except Exception as e:
@@ -152,8 +152,8 @@ async def websocket_audio(websocket: WebSocket):
                     news_collections = generate_content(decision=command, query=transcription.transcript, client=client)
 
                     # TTS and playback
-                    text_to_speech(news_collections.summary, client)
                     await websocket.send_text(news_collections.model_dump_json())
+                    text_to_speech(news_collections.summary, client)
                     play_audio("gpt/speech.mp3")
 
                     # Optionally, send text back
