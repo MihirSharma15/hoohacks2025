@@ -1,3 +1,5 @@
+"use server" 
+
 export async function getBatchStockData(tickers: string[]) {
     try {
       const tickerParams = tickers.map(ticker => `tickers=${ticker}`).join('&');

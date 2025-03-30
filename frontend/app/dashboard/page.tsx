@@ -433,9 +433,9 @@ export default function Dashboard() {
                       </span>
                     </button>
 
-                    {expandedStocks.includes(ticker) && (
+                    {expandedStocks.includes(stock.ticker) && (
                       <div className="p-3 bg-gray-50 border-t text-sm">
-                        {getStockNews(ticker).map((news, i) => (
+                        {getStockNews(stock.ticker).map((news, i) => (
                           <div
                             key={i}
                             className="mb-2 pb-2 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0"
