@@ -8,6 +8,9 @@ from fastapi.responses import HTMLResponse
 from api.data_process import get_stock_data, process_audio
 from schemas.api_schemas import APIStock, BatchAPIStock, BatchTickers
 from fastapi import status
+from gpt.agent_tools import speech_to_text
+import tempfile
+import os
 
 app = FastAPI(
     title="Aura API",
@@ -107,13 +110,23 @@ async def websocket_audio(websocket: WebSocket):
         while True:
             # Receive audio data as binary bytes
             audio_data = await websocket.receive_bytes()
-            # text = await websocket.receive_text()
             
-            processed_audio = await process_audio(audio_data)
+             # Save the bytes to a temporary MP3 file
+            with tempfile.NamedTemporaryFile(suffix='.mp3', delete=False) as temp_file:
+                temp_file_path = temp_file.name
+                temp_file.write(audio_data)
             
-            # Send the processed audio back to the client
-            await websocket.send_bytes(processed_audio)
-            # await websocket.send_text(f"Received: {text}")
+            try:
+                # Process the audio file using your existing function
+                transcription = speech_to_text(temp_file_path, client)
+                
+                print(transcription)
+                # Send the transcription back to the client
+                # await websocket.send_text(transcription.transcript)
+            finally:
+                # Clean up the temporary file
+                if os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
     except WebSocketDisconnect:
         print("Client disconnected")
     except Exception as e:
