@@ -140,6 +140,7 @@ export default function Dashboard() {
 
     wsRef.current.onmessage = (event) => {
       try {
+        console.log(event.data)
         const data = JSON.parse(event.data);
 
         // If the data contains a summary and articles
@@ -398,24 +399,19 @@ export default function Dashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {/* Begin source cards */}
-                  {message.role === "assistant" &&
-                    data.map((title, index) => (
+                  {message.role === "assistant" && 
+                    articles.map((article, index) => (
                       <Card
                         className="w-[350px] cursor-pointer"
                         key={index}
                         onClick={() =>
-                          window.open("https://www.google.com", "_blank")
+                          window.open(article.url, "_blank")
                         }
                       >
                         <div className="p-4">
                           <CardHeader className="font-bold">
-                            Trump's promised 'Liberation Day' of tariffs is
-                            coming. Here's what it could mean for you
+                            {article.title}
                           </CardHeader>
-                          <CardDescription>
-                            This is the description of the depressing economic
-                            news that was just given to you
-                          </CardDescription>
                         </div>
                       </Card>
                     ))}
