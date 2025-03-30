@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import DashHeader from "@/components/dashHeader";
 
 // Account Settings Modal Component
 export function AccountSettingsModal({ isOpen, onClose }) {
@@ -290,30 +291,12 @@ export default function Dashboard() {
 
   return (
     <div className="flex h-screen bg-gray-100 relative">
+      <DashHeader onClick={() => setShowAccountModal(true)} />
       {/* Profile Button */}
-      <button
-        onClick={() => setShowAccountModal(true)}
-        className="fixed top-4 left-4 w-12 h-12 bg-black rounded-full flex items-center justify-center shadow-md hover:bg-gray-800 transition-colors z-10"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </button>
 
       {/* Main Content */}
       <div
-        className={`transition-all duration-300 flex flex-col flex-1 overflow-hidden ${
+        className={`transition-all duration-300 flex flex-col flex-1 overflow-hidden pt-16 ${
           sliderVisible ? "pr-64" : "pr-0"
         }`}
       >
@@ -455,7 +438,7 @@ export default function Dashboard() {
 
         {/* Slider Panel */}
         <div
-          className={`transition-all duration-300 bg-white border-l border-gray-200 h-full overflow-hidden ${
+          className={`pt-20 transition-all duration-300 bg-white border-l border-gray-200 h-full overflow-hidden ${
             sliderVisible ? "w-64" : "w-0"
           }`}
         >
